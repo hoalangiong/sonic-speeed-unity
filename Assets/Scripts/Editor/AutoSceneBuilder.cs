@@ -84,9 +84,10 @@ public class AutoSceneBuilder : MonoBehaviour
         // Try loading model directly by known asset path
         string[] tryPaths = {
             "Assets/Models/lamborghini.fbx",
+            "Assets/Models/ferrari/ferrari.fbx",
+            "Assets/Models/porsche/porsche.fbx",
             "Assets/Models/lamborghini.glb",
             "Assets/Models/scene.gltf",
-            "Assets/Models/scene.glb",
         };
 
         foreach (string tryPath in tryPaths)

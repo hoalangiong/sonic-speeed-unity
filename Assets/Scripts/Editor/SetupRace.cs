@@ -221,6 +221,12 @@ public class SetupRace : MonoBehaviour
         var minimap = minimapObj.AddComponent<Minimap>();
         minimap.player = player.transform;
         minimap.aiRacers = aiRacers;
+
+        // Car Selector (shows before race)
+        var oldSelector = GameObject.Find("CarSelectorUI");
+        if (oldSelector != null) DestroyImmediate(oldSelector);
+        var selectorObj = new GameObject("CarSelectorUI");
+        selectorObj.AddComponent<CarSelector>();
     }
 #endif
 }
