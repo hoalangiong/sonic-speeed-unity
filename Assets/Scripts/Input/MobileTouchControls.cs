@@ -1,13 +1,19 @@
 using UnityEngine;
 
 /// <summary>
-/// Mobile touch controls — on-screen buttons for gas/brake/steer/nitro.
-/// Renders buttons using OnGUI for simplicity (no Canvas needed).
+/// Mobile touch controls — Drive X style using Input.touches.
+/// Divides screen into zones for reliable continuous input.
+/// No GUI buttons — uses touch position detection (no "release" when finger moves).
 /// </summary>
 public class MobileTouchControls : MonoBehaviour
 {
     public VehicleController vehicle;
     public NitroSystem nitro;
+
+    // Touch zones (percentage of screen)
+    // LEFT 30%: steering (left half = steer left, right half = steer right)
+    // RIGHT 30%: top half = gas, bottom half = brake
+    // MIDDLE: nitro tap
 
     private bool gasPressed;
     private bool brakePressed;
@@ -18,100 +24,137 @@ public class MobileTouchControls : MonoBehaviour
     {
         if (vehicle == null) return;
 
-        // Mobile touch
+        // Reset all inputs each frame
+        gasPressed = false;
+        brakePressed = false;
+        leftPressed = false;
+        rightPressed = false;
+
+        // Process all active touches
+        if (Input.touchCount > 0)
+        {
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                Touch touch = Input.GetTouch(i);
+                if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                    continue;
+
+                ProcessTouch(touch.position);
+            }
+        }
+
+        // Keyboard fallback (editor)
+        if (Application.isEditor)
+        {
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) gasPressed = true;
+            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) brakePressed = true;
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) leftPressed = true;
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) rightPressed = true;
+            if (Input.GetKey(KeyCode.LeftShift) && nitro != null) nitro.Activate();
+
+            // Mouse click also works in editor
+            if (Input.GetMouseButton(0))
+            {
+                ProcessTouch(Input.mousePosition);
+            }
+        }
+
+        // Apply to vehicle
         vehicle.inputGas = gasPressed ? 1f : 0f;
         vehicle.inputBrake = brakePressed ? 1f : 0f;
-
         float steer = 0;
         if (leftPressed) steer -= 1f;
         if (rightPressed) steer += 1f;
         vehicle.inputSteer = steer;
+    }
 
-        // Keyboard fallback (editor testing)
-        if (Application.isEditor || !Application.isMobilePlatform)
+    void ProcessTouch(Vector2 pos)
+    {
+        float sw = Screen.width;
+        float sh = Screen.height;
+
+        float xPercent = pos.x / sw;
+        float yPercent = pos.y / sh; // 0 = bottom, 1 = top
+
+        // LEFT ZONE (0% - 35% width) = Steering
+        if (xPercent < 0.35f)
         {
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) vehicle.inputGas = 1f;
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) vehicle.inputBrake = 1f;
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) vehicle.inputSteer = -1f;
-            else if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) vehicle.inputSteer = 1f;
-            if (Input.GetKey(KeyCode.LeftShift) && nitro != null) nitro.Activate();
+            // Left half of left zone = steer left
+            if (xPercent < 0.175f)
+                leftPressed = true;
+            else
+                rightPressed = true;
+        }
+        // RIGHT ZONE (65% - 100% width) = Gas/Brake
+        else if (xPercent > 0.65f)
+        {
+            // Top half = Gas, Bottom half = Brake
+            if (yPercent > 0.4f)
+                gasPressed = true;
+            else
+                brakePressed = true;
+        }
+        // MIDDLE ZONE (35% - 65%) = Nitro (tap)
+        else
+        {
+            if (nitro != null) nitro.Activate();
         }
     }
 
     void OnGUI()
     {
-        // Always show touch buttons (mobile + editor)
         float sw = Screen.width;
         float sh = Screen.height;
 
-        // Drive X style — BIG buttons
-        float btnW = sw * 0.12f; // Wide buttons
-        float btnH = sh * 0.18f; // Tall buttons
-        float smallBtn = sh * 0.13f;
-        float padding = sw * 0.02f;
+        // Draw zone indicators (semi-transparent)
+        Texture2D tex = Texture2D.whiteTexture;
 
-        // Custom style for big buttons
-        GUIStyle bigBtnStyle = new GUIStyle(GUI.skin.button);
-        bigBtnStyle.fontSize = (int)(btnH * 0.35f);
-        bigBtnStyle.fontStyle = FontStyle.Bold;
+        // Left zone — steering indicators
+        float zoneAlpha = 0.15f;
+        float activeAlpha = 0.4f;
 
-        // === LEFT SIDE: Steering (big arrows) ===
-        float leftY = sh - btnH - padding;
+        // Left arrow zone
+        GUI.color = leftPressed ? new Color(1f, 0.8f, 0f, activeAlpha) : new Color(1f, 1f, 1f, zoneAlpha);
+        GUI.DrawTexture(new Rect(0, sh * 0.5f, sw * 0.175f, sh * 0.5f), tex);
 
-        // Left ◀
-        GUI.backgroundColor = leftPressed ? new Color(1f, 0.8f, 0f) : new Color(0.15f, 0.15f, 0.2f, 0.9f);
-        if (GUI.RepeatButton(new Rect(padding, leftY, btnW, btnH), "◀", bigBtnStyle))
-            leftPressed = true;
-        else
-            leftPressed = false;
+        // Right arrow zone
+        GUI.color = rightPressed ? new Color(1f, 0.8f, 0f, activeAlpha) : new Color(1f, 1f, 1f, zoneAlpha);
+        GUI.DrawTexture(new Rect(sw * 0.175f, sh * 0.5f, sw * 0.175f, sh * 0.5f), tex);
 
-        // Right ▶
-        GUI.backgroundColor = rightPressed ? new Color(1f, 0.8f, 0f) : new Color(0.15f, 0.15f, 0.2f, 0.9f);
-        if (GUI.RepeatButton(new Rect(padding + btnW + padding, leftY, btnW, btnH), "▶", bigBtnStyle))
-            rightPressed = true;
-        else
-            rightPressed = false;
+        // Gas zone
+        GUI.color = gasPressed ? new Color(0f, 1f, 0f, activeAlpha) : new Color(0f, 0.7f, 0f, zoneAlpha);
+        GUI.DrawTexture(new Rect(sw * 0.65f, 0, sw * 0.35f, sh * 0.6f), tex);
 
-        // === RIGHT SIDE: Gas / Brake (big, stacked) ===
-        float rightX = sw - btnW - padding;
+        // Brake zone
+        GUI.color = brakePressed ? new Color(1f, 0f, 0f, activeAlpha) : new Color(0.7f, 0f, 0f, zoneAlpha);
+        GUI.DrawTexture(new Rect(sw * 0.65f, sh * 0.6f, sw * 0.35f, sh * 0.4f), tex);
 
-        // Gas ▲ (top right)
-        GUI.backgroundColor = gasPressed ? new Color(0f, 1f, 0f) : new Color(0f, 0.5f, 0f, 0.9f);
-        if (GUI.RepeatButton(new Rect(rightX, sh - btnH * 2 - padding * 2, btnW, btnH), "▲", bigBtnStyle))
-            gasPressed = true;
-        else
-            gasPressed = false;
+        GUI.color = Color.white;
 
-        // Brake ▼ (bottom right)
-        GUI.backgroundColor = brakePressed ? new Color(1f, 0f, 0f) : new Color(0.5f, 0f, 0f, 0.9f);
-        if (GUI.RepeatButton(new Rect(rightX, sh - btnH - padding, btnW, btnH), "▼", bigBtnStyle))
-            brakePressed = true;
-        else
-            brakePressed = false;
+        // Labels
+        GUIStyle labelStyle = new GUIStyle();
+        labelStyle.fontSize = (int)(sh * 0.05f);
+        labelStyle.fontStyle = FontStyle.Bold;
+        labelStyle.alignment = TextAnchor.MiddleCenter;
+        labelStyle.normal.textColor = new Color(1, 1, 1, 0.6f);
 
-        // === NITRO (middle right, smaller) ===
-        GUIStyle nitroBtnStyle = new GUIStyle(GUI.skin.button);
-        nitroBtnStyle.fontSize = (int)(smallBtn * 0.25f);
-        nitroBtnStyle.fontStyle = FontStyle.Bold;
+        GUI.Label(new Rect(0, sh * 0.7f, sw * 0.175f, sh * 0.1f), "◀", labelStyle);
+        GUI.Label(new Rect(sw * 0.175f, sh * 0.7f, sw * 0.175f, sh * 0.1f), "▶", labelStyle);
+        GUI.Label(new Rect(sw * 0.65f, sh * 0.2f, sw * 0.35f, sh * 0.1f), "GAS", labelStyle);
+        GUI.Label(new Rect(sw * 0.65f, sh * 0.7f, sw * 0.35f, sh * 0.1f), "BRAKE", labelStyle);
 
-        GUI.backgroundColor = (nitro != null && nitro.CurrentNitro > 20f) ?
-            new Color(0f, 0.6f, 1f, 0.95f) : new Color(0.2f, 0.2f, 0.3f, 0.6f);
-        if (GUI.Button(new Rect(rightX - smallBtn - padding, sh - btnH - padding, smallBtn, smallBtn), "⚡N₂O", nitroBtnStyle))
-        {
-            if (nitro != null) nitro.Activate();
-        }
+        // Nitro zone
+        labelStyle.normal.textColor = new Color(0f, 0.8f, 1f, 0.6f);
+        GUI.Label(new Rect(sw * 0.35f, sh * 0.8f, sw * 0.3f, sh * 0.1f), "⚡ NITRO", labelStyle);
 
-        // === RESET (top left, small) ===
+        // Reset button (top left, small)
         GUIStyle resetStyle = new GUIStyle(GUI.skin.button);
         resetStyle.fontSize = (int)(sh * 0.025f);
-        resetStyle.fontStyle = FontStyle.Bold;
-
-        GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.85f);
-        if (GUI.Button(new Rect(padding, padding, sw * 0.1f, sh * 0.07f), "RESET", resetStyle))
+        GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.8f);
+        if (GUI.Button(new Rect(sw * 0.02f, sh * 0.02f, sw * 0.08f, sh * 0.06f), "↺", resetStyle))
         {
             if (vehicle != null) vehicle.RespawnOnTrack();
         }
-
         GUI.backgroundColor = Color.white;
     }
 }
