@@ -227,6 +227,18 @@ public class SetupRace : MonoBehaviour
         if (oldSelector != null) DestroyImmediate(oldSelector);
         var selectorObj = new GameObject("CarSelectorUI");
         selectorObj.AddComponent<CarSelector>();
+
+        // Track Selector (shows after car select)
+        var oldTrackSel = GameObject.Find("TrackSelectorUI");
+        if (oldTrackSel != null) DestroyImmediate(oldTrackSel);
+        var trackSelObj = new GameObject("TrackSelectorUI");
+        trackSelObj.AddComponent<TrackSelector>();
+
+        // Track visual applier (applies colors/lighting when track selected)
+        var oldApplier = GameObject.Find("TrackApplier");
+        if (oldApplier != null) DestroyImmediate(oldApplier);
+        var applierObj = new GameObject("TrackApplier");
+        applierObj.AddComponent<TrackVisualApplier>();
     }
 #endif
 }
