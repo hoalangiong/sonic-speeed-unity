@@ -239,6 +239,24 @@ public class SetupRace : MonoBehaviour
         if (oldApplier != null) DestroyImmediate(oldApplier);
         var applierObj = new GameObject("TrackApplier");
         applierObj.AddComponent<TrackVisualApplier>();
+
+        // Coins on track
+        var oldCoins = GameObject.Find("CoinSystem");
+        if (oldCoins != null) DestroyImmediate(oldCoins);
+        var coinObj = new GameObject("CoinSystem");
+        coinObj.AddComponent<CoinSpawner>();
+
+        // Power-ups on track
+        var oldPU = GameObject.Find("PowerUpSystem");
+        if (oldPU != null) DestroyImmediate(oldPU);
+        var puObj = new GameObject("PowerUpSystem");
+        puObj.AddComponent<PowerUpSystem>();
+
+        // Star rating + celebration
+        var oldStar = GameObject.Find("StarRating");
+        if (oldStar != null) DestroyImmediate(oldStar);
+        var starObj = new GameObject("StarRating");
+        starObj.AddComponent<StarRating>();
     }
 #endif
 }
