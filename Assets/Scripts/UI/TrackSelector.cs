@@ -41,6 +41,14 @@ public class TrackSelector : MonoBehaviour
     public static TrackData[] AvailableTracks = new TrackData[]
     {
         new TrackData(
+            "Highway", "Đường thẳng dài, dễ chạy",
+            new Color(0.5f, 0.75f, 1f),
+            new Color(0.2f, 0.45f, 0.12f),
+            new Color(0.15f, 0.15f, 0.17f),
+            new Color(0.7f, 0.8f, 0.9f),
+            300f, 30f, true, false
+        ),
+        new TrackData(
             "Coastal Highway", "Đường ven biển, nắng đẹp",
             new Color(0.5f, 0.75f, 1f),
             new Color(0.2f, 0.45f, 0.12f),
@@ -106,7 +114,7 @@ public class TrackSelector : MonoBehaviour
         ),
     };
 
-    public static int SelectedTrackIndex = 0;
+    public static int SelectedTrackIndex = 0; // 0 = Coastal (highway default)
 
     private bool confirmed = false;
     private bool waitingForCarSelect = true;

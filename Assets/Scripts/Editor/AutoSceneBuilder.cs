@@ -38,35 +38,37 @@ public class AutoSceneBuilder : MonoBehaviour
 
     static void SetupRealisticLighting()
     {
-        // Sun
+        // Sun — bright and warm
         var sunObj = GameObject.Find("Directional Light");
         if (sunObj != null)
         {
-            sunObj.transform.rotation = Quaternion.Euler(45, -30, 0);
+            sunObj.transform.rotation = Quaternion.Euler(40, -30, 0);
             var light = sunObj.GetComponent<Light>();
-            light.intensity = 1.8f;
-            light.color = new Color(1f, 0.96f, 0.88f);
+            light.intensity = 2.0f;
+            light.color = new Color(1f, 0.97f, 0.9f);
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.7f;
+            light.shadowStrength = 0.5f;
         }
 
-        // Environment
+        // Bright ambient — no dark areas
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.6f, 0.75f, 1f);
-        RenderSettings.ambientEquatorColor = new Color(0.85f, 0.85f, 0.8f);
-        RenderSettings.ambientGroundColor = new Color(0.25f, 0.35f, 0.15f);
+        RenderSettings.ambientSkyColor = new Color(0.7f, 0.85f, 1f);
+        RenderSettings.ambientEquatorColor = new Color(0.9f, 0.9f, 0.85f);
+        RenderSettings.ambientGroundColor = new Color(0.4f, 0.5f, 0.3f);
+
+        // Light fog for depth
         RenderSettings.fog = true;
-        RenderSettings.fogColor = new Color(0.7f, 0.8f, 0.9f);
+        RenderSettings.fogColor = new Color(0.75f, 0.85f, 0.95f);
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = 100;
+        RenderSettings.fogStartDistance = 150;
         RenderSettings.fogEndDistance = 800;
 
-        // Extra fill light
+        // Fill light from opposite side
         var fillLight = new GameObject("FillLight");
         var fl = fillLight.AddComponent<Light>();
         fl.type = LightType.Directional;
-        fl.intensity = 0.4f;
-        fl.color = new Color(0.6f, 0.7f, 1f);
+        fl.intensity = 0.6f;
+        fl.color = new Color(0.7f, 0.8f, 1f);
         fillLight.transform.rotation = Quaternion.Euler(30, 150, 0);
         fl.shadows = LightShadows.None;
     }

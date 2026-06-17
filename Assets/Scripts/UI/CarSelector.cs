@@ -225,6 +225,18 @@ public class CarSelector : MonoBehaviour
                     vc.acceleration = car.acceleration;
                     vc.turnSpeed = car.handling;
                 }
+
+                // Apply color to player car
+                var car2 = AvailableCars[SelectedCarIndex];
+                foreach (var renderer in player.GetComponentsInChildren<Renderer>())
+                {
+                    foreach (var mat in renderer.materials)
+                    {
+                        mat.color = car2.color;
+                        mat.SetFloat("_Metallic", 0.85f);
+                        mat.SetFloat("_Glossiness", 0.9f);
+                    }
+                }
             }
 
             DestroyPreviews();
