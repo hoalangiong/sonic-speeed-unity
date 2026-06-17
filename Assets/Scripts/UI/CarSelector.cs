@@ -41,6 +41,90 @@ public class CarSelector : MonoBehaviour
     public static int SelectedCarIndex = 0;
 
     private bool raceStarted = false;
+    private GameObject[] previewCars;
+    private bool previewsCreated = false;
+
+    void Start()
+    {
+        CreateCarPreviews();
+    }
+
+    void CreateCarPreviews()
+    {
+        previewCars = new GameObject[AvailableCars.Length];
+        float spacing = 5f;
+        float startX = -(AvailableCars.Length - 1) * spacing / 2f;
+
+        for (int i = 0; i < AvailableCars.Length; i++)
+        {
+            var carData = AvailableCars[i];
+            var prefab = UnityEngine.Resources.Load<GameObject>(carData.modelPath);
+
+            // Try loading via path
+            #if UNITY_EDITOR
+            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(carData.modelPath);
+            #endif
+
+            if (prefab != null)
+            {
+                var preview = Instantiate(prefab);
+                preview.name = $"Preview_{carData.name}";
+                preview.transform.position = new Vector3(startX + i * spacing, 0.5f, 15f);
+                preview.transform.rotation = Quaternion.Euler(0, 160, 0);
+                preview.transform.localScale = Vector3.one * 1.5f;
+
+                // Remove physics from preview
+                foreach (var col in preview.GetComponentsInChildren<Collider>())
+                    Destroy(col);
+                var rb = preview.GetComponent<Rigidbody>();
+                if (rb != null) Destroy(rb);
+
+                // Color it
+                foreach (var renderer in preview.GetComponentsInChildren<Renderer>())
+                {
+                    foreach (var mat in renderer.materials)
+                    {
+                        mat.color = carData.color;
+                        mat.SetFloat("_Metallic", 0.85f);
+                        mat.SetFloat("_Glossiness", 0.9f);
+                    }
+                }
+
+                previewCars[i] = preview;
+            }
+        }
+        previewsCreated = true;
+    }
+
+    void Update()
+    {
+        if (!previewsCreated || raceStarted) return;
+
+        // Rotate selected car, dim others
+        for (int i = 0; i < previewCars.Length; i++)
+        {
+            if (previewCars[i] == null) continue;
+
+            if (i == SelectedCarIndex)
+            {
+                previewCars[i].transform.Rotate(0, 30f * Time.deltaTime, 0);
+                previewCars[i].SetActive(true);
+            }
+            else
+            {
+                previewCars[i].SetActive(true);
+            }
+        }
+    }
+
+    void DestroyPreviews()
+    {
+        if (previewCars != null)
+        {
+            foreach (var car in previewCars)
+                if (car != null) Destroy(car);
+        }
+    }
 
     void OnGUI()
     {
@@ -143,6 +227,7 @@ public class CarSelector : MonoBehaviour
                 }
             }
 
+            DestroyPreviews();
             gameObject.SetActive(false);
         }
     }

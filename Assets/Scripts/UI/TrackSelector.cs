@@ -42,43 +42,67 @@ public class TrackSelector : MonoBehaviour
     {
         new TrackData(
             "Coastal Highway", "Đường ven biển, nắng đẹp",
-            new Color(0.5f, 0.75f, 1f),           // sky blue
-            new Color(0.2f, 0.45f, 0.12f),         // green grass
-            new Color(0.15f, 0.15f, 0.17f),        // dark road
-            new Color(0.7f, 0.8f, 0.9f),           // light fog
+            new Color(0.5f, 0.75f, 1f),
+            new Color(0.2f, 0.45f, 0.12f),
+            new Color(0.15f, 0.15f, 0.17f),
+            new Color(0.7f, 0.8f, 0.9f),
             150f, 100f, true, false
         ),
         new TrackData(
             "Tokyo Night", "Đường phố đêm, neon rực rỡ",
-            new Color(0.02f, 0.02f, 0.08f),        // dark night sky
-            new Color(0.1f, 0.1f, 0.12f),          // dark ground
-            new Color(0.2f, 0.2f, 0.25f),          // grey road
-            new Color(0.05f, 0.0f, 0.1f),          // purple fog
+            new Color(0.02f, 0.02f, 0.08f),
+            new Color(0.1f, 0.1f, 0.12f),
+            new Color(0.2f, 0.2f, 0.25f),
+            new Color(0.05f, 0.0f, 0.1f),
             120f, 80f, false, true
         ),
         new TrackData(
             "Desert Storm", "Sa mạc hoàng hôn, tốc độ max",
-            new Color(0.95f, 0.6f, 0.3f),          // orange sky
-            new Color(0.8f, 0.6f, 0.3f),           // sand
-            new Color(0.2f, 0.18f, 0.15f),         // dusty road
-            new Color(0.9f, 0.7f, 0.4f),           // sandy fog
+            new Color(0.95f, 0.6f, 0.3f),
+            new Color(0.8f, 0.6f, 0.3f),
+            new Color(0.2f, 0.18f, 0.15f),
+            new Color(0.9f, 0.7f, 0.4f),
             200f, 120f, true, false
         ),
         new TrackData(
             "Snow Alps", "Núi tuyết, đường trơn",
-            new Color(0.7f, 0.8f, 0.95f),          // pale blue sky
-            new Color(0.9f, 0.92f, 0.95f),         // snow white
-            new Color(0.3f, 0.32f, 0.35f),         // wet road
-            new Color(0.85f, 0.88f, 0.92f),        // white fog
+            new Color(0.7f, 0.8f, 0.95f),
+            new Color(0.9f, 0.92f, 0.95f),
+            new Color(0.3f, 0.32f, 0.35f),
+            new Color(0.85f, 0.88f, 0.92f),
             130f, 90f, false, false
         ),
         new TrackData(
             "Neon Circuit", "Tron-style, đường phát sáng",
-            new Color(0.0f, 0.0f, 0.05f),          // black
-            new Color(0.02f, 0.02f, 0.05f),        // near black
-            new Color(0.0f, 0.1f, 0.2f),           // dark blue road
-            new Color(0.0f, 0.05f, 0.1f),          // dark fog
+            new Color(0.0f, 0.0f, 0.05f),
+            new Color(0.02f, 0.02f, 0.05f),
+            new Color(0.0f, 0.1f, 0.2f),
+            new Color(0.0f, 0.05f, 0.1f),
             160f, 110f, true, true
+        ),
+        new TrackData(
+            "Miami Beach", "Hoàng hôn hồng, cọ, biển",
+            new Color(0.95f, 0.5f, 0.6f),
+            new Color(0.9f, 0.85f, 0.6f),
+            new Color(0.18f, 0.16f, 0.16f),
+            new Color(0.95f, 0.6f, 0.7f),
+            170f, 110f, true, false
+        ),
+        new TrackData(
+            "Volcano Island", "Núi lửa, lava đỏ 2 bên",
+            new Color(0.3f, 0.1f, 0.0f),
+            new Color(0.15f, 0.08f, 0.03f),
+            new Color(0.1f, 0.08f, 0.06f),
+            new Color(0.4f, 0.15f, 0.0f),
+            140f, 95f, true, false
+        ),
+        new TrackData(
+            "Space Station", "Không gian, sao trời lấp lánh",
+            new Color(0.0f, 0.0f, 0.02f),
+            new Color(0.05f, 0.05f, 0.08f),
+            new Color(0.1f, 0.1f, 0.15f),
+            new Color(0.0f, 0.0f, 0.03f),
+            180f, 130f, true, true
         ),
     };
 

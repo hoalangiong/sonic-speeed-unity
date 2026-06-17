@@ -1,0 +1,12 @@
+# ninja log v5
+93	812	8034052062019987	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	8305693208b9f161
+817	1577	8034052068837509	C:/Users/Dell Precision 5560/.openclaw/sonic-speeed-unity-project/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/18355v10/obj/arm64-v8a/libswappywrapper.so	1cb17561c71a755d
+24	3942	8034052093114218	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	62bb0d7f520bc89
+44	4052	8034052094234200	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	1d4ab107ba1a74f0
+60	4239	8034052096144130	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	c1e6acfd3a517fe8
+9	4285	8034052096676183	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	711a15b7fa52501a
+16	4345	8034052097305540	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	5a3a4f7561acfc92
+77	4737	8034052101199230	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	22d713211a50b10d
+35	5032	8034052104218774	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	1a758962679b83a5
+0	5216	8034052105951896	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	34ef38cb8bccef31
+5217	5396	8034052107862943	C:/Users/Dell Precision 5560/.openclaw/sonic-speeed-unity-project/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/18355v10/obj/arm64-v8a/libgame.so	30c79c343b049afe

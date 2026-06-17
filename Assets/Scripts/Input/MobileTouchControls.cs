@@ -40,60 +40,74 @@ public class MobileTouchControls : MonoBehaviour
 
     void OnGUI()
     {
-        // Only show touch buttons on mobile (or always for testing)
-        if (!Application.isMobilePlatform && !Application.isEditor) return;
-
+        // Always show touch buttons (mobile + editor)
         float sw = Screen.width;
         float sh = Screen.height;
-        float btnSize = Mathf.Min(sw, sh) * 0.12f;
-        float padding = 15f;
 
-        // === LEFT SIDE: Steering ===
-        float leftX = padding;
-        float leftY = sh - btnSize * 2 - padding * 2;
+        // Drive X style — BIG buttons
+        float btnW = sw * 0.12f; // Wide buttons
+        float btnH = sh * 0.18f; // Tall buttons
+        float smallBtn = sh * 0.13f;
+        float padding = sw * 0.02f;
 
-        // Left button ◀
-        GUI.backgroundColor = leftPressed ? new Color(1f, 0.8f, 0f) : new Color(0.2f, 0.2f, 0.3f, 0.85f);
-        if (GUI.RepeatButton(new Rect(leftX, leftY + btnSize + padding, btnSize, btnSize), "◀"))
+        // Custom style for big buttons
+        GUIStyle bigBtnStyle = new GUIStyle(GUI.skin.button);
+        bigBtnStyle.fontSize = (int)(btnH * 0.35f);
+        bigBtnStyle.fontStyle = FontStyle.Bold;
+
+        // === LEFT SIDE: Steering (big arrows) ===
+        float leftY = sh - btnH - padding;
+
+        // Left ◀
+        GUI.backgroundColor = leftPressed ? new Color(1f, 0.8f, 0f) : new Color(0.15f, 0.15f, 0.2f, 0.9f);
+        if (GUI.RepeatButton(new Rect(padding, leftY, btnW, btnH), "◀", bigBtnStyle))
             leftPressed = true;
         else
             leftPressed = false;
 
-        // Right button ▶
-        GUI.backgroundColor = rightPressed ? new Color(1f, 0.8f, 0f) : new Color(0.2f, 0.2f, 0.3f, 0.85f);
-        if (GUI.RepeatButton(new Rect(leftX + btnSize + padding, leftY + btnSize + padding, btnSize, btnSize), "▶"))
+        // Right ▶
+        GUI.backgroundColor = rightPressed ? new Color(1f, 0.8f, 0f) : new Color(0.15f, 0.15f, 0.2f, 0.9f);
+        if (GUI.RepeatButton(new Rect(padding + btnW + padding, leftY, btnW, btnH), "▶", bigBtnStyle))
             rightPressed = true;
         else
             rightPressed = false;
 
-        // === RIGHT SIDE: Gas / Brake / Nitro ===
-        float rightX = sw - btnSize - padding;
+        // === RIGHT SIDE: Gas / Brake (big, stacked) ===
+        float rightX = sw - btnW - padding;
 
-        // Gas ▲
-        GUI.backgroundColor = gasPressed ? new Color(0f, 1f, 0f) : new Color(0f, 0.6f, 0f, 0.85f);
-        if (GUI.RepeatButton(new Rect(rightX, sh - btnSize * 2 - padding * 2, btnSize, btnSize), "▲"))
+        // Gas ▲ (top right)
+        GUI.backgroundColor = gasPressed ? new Color(0f, 1f, 0f) : new Color(0f, 0.5f, 0f, 0.9f);
+        if (GUI.RepeatButton(new Rect(rightX, sh - btnH * 2 - padding * 2, btnW, btnH), "▲", bigBtnStyle))
             gasPressed = true;
         else
             gasPressed = false;
 
-        // Brake ▼
-        GUI.backgroundColor = brakePressed ? new Color(1f, 0f, 0f) : new Color(0.6f, 0f, 0f, 0.85f);
-        if (GUI.RepeatButton(new Rect(rightX, sh - btnSize - padding, btnSize, btnSize), "▼"))
+        // Brake ▼ (bottom right)
+        GUI.backgroundColor = brakePressed ? new Color(1f, 0f, 0f) : new Color(0.5f, 0f, 0f, 0.9f);
+        if (GUI.RepeatButton(new Rect(rightX, sh - btnH - padding, btnW, btnH), "▼", bigBtnStyle))
             brakePressed = true;
         else
             brakePressed = false;
 
-        // Nitro ⚡
+        // === NITRO (middle right, smaller) ===
+        GUIStyle nitroBtnStyle = new GUIStyle(GUI.skin.button);
+        nitroBtnStyle.fontSize = (int)(smallBtn * 0.25f);
+        nitroBtnStyle.fontStyle = FontStyle.Bold;
+
         GUI.backgroundColor = (nitro != null && nitro.CurrentNitro > 20f) ?
-            new Color(0f, 0.5f, 1f, 0.9f) : new Color(0.2f, 0.2f, 0.3f, 0.5f);
-        if (GUI.Button(new Rect(rightX - btnSize - padding, sh - btnSize * 2 - padding * 2, btnSize, btnSize), "⚡N₂O"))
+            new Color(0f, 0.6f, 1f, 0.95f) : new Color(0.2f, 0.2f, 0.3f, 0.6f);
+        if (GUI.Button(new Rect(rightX - smallBtn - padding, sh - btnH - padding, smallBtn, smallBtn), "⚡N₂O", nitroBtnStyle))
         {
             if (nitro != null) nitro.Activate();
         }
 
-        // Reset button (top left)
-        GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.8f);
-        if (GUI.Button(new Rect(padding, padding, btnSize * 1.2f, btnSize * 0.6f), "RESET"))
+        // === RESET (top left, small) ===
+        GUIStyle resetStyle = new GUIStyle(GUI.skin.button);
+        resetStyle.fontSize = (int)(sh * 0.025f);
+        resetStyle.fontStyle = FontStyle.Bold;
+
+        GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.85f);
+        if (GUI.Button(new Rect(padding, padding, sw * 0.1f, sh * 0.07f), "RESET", resetStyle))
         {
             if (vehicle != null) vehicle.RespawnOnTrack();
         }
