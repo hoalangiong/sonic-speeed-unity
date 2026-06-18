@@ -43,15 +43,34 @@ public class SetupRace : MonoBehaviour
         var waypointParent = new GameObject("Waypoints");
         var points = new List<Transform>();
 
-        // Generate waypoints along oval circuit (same shape as road)
+        // Generate waypoints using same GetTrackPosition logic
         int numWaypoints = 20;
         for (int i = 0; i < numWaypoints; i++)
         {
             float angle = (float)i / numWaypoints * Mathf.PI * 2;
-            float rx = 150f + Mathf.Sin(angle * 3) * 20f;
-            float rz = 100f + Mathf.Cos(angle * 2) * 15f;
-            float x = Mathf.Cos(angle) * rx;
-            float z = Mathf.Sin(angle) * rz;
+
+            // Get track params
+            float rx = 150f;
+            float rz = 100f;
+            if (TrackSelector.AvailableTracks != null && TrackSelector.SelectedTrackIndex < TrackSelector.AvailableTracks.Length)
+            {
+                rx = TrackSelector.AvailableTracks[TrackSelector.SelectedTrackIndex].trackScaleX;
+                rz = TrackSelector.AvailableTracks[TrackSelector.SelectedTrackIndex].trackScaleZ;
+            }
+
+            float x, z;
+            if (rz < 50f)
+            {
+                // Highway — straight
+                z = (angle / (Mathf.PI * 2)) * rx * 4f - rx * 2f;
+                x = Mathf.Sin(angle * 0.5f) * 5f;
+            }
+            else
+            {
+                // Oval
+                x = Mathf.Cos(angle) * rx;
+                z = Mathf.Sin(angle) * rz;
+            }
 
             var wp = new GameObject($"WP_{i}");
             wp.transform.parent = waypointParent.transform;

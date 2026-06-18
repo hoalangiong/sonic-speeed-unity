@@ -220,10 +220,10 @@ public class AutoSceneBuilder : MonoBehaviour
         var oldMarkings = GameObject.Find("RoadMarkings");
         if (oldMarkings != null) DestroyImmediate(oldMarkings);
 
-        // Create oval circuit road using many segments
+        // Create road using many segments
         var roadParent = new GameObject("Road");
         int segments = 80;
-        float roadWidth = 15f;
+        float roadWidth = 20f; // Wider road — easier to stay on
 
         for (int i = 0; i < segments; i++)
         {
@@ -290,15 +290,37 @@ public class AutoSceneBuilder : MonoBehaviour
         }
     }
 
-    /// <summary>Get position on oval track at given angle (0 to 2*PI)</summary>
+    /// <summary>Get position on track at given angle (0 to 2*PI)</summary>
     static Vector3 GetTrackPosition(float angle)
     {
-        // Oval: 150m x 100m with some variation for interesting curves
-        float rx = 150f + Mathf.Sin(angle * 3) * 20f;
-        float rz = 100f + Mathf.Cos(angle * 2) * 15f;
-        float x = Mathf.Cos(angle) * rx;
-        float z = Mathf.Sin(angle) * rz;
-        return new Vector3(x, 0, z);
+        // Check if Highway (straight) track is selected
+        // Highway = trackScaleZ < 50 (very narrow oval = almost straight)
+        float rx = 150f;
+        float rz = 100f;
+
+        // Use stored track dimensions if available
+        if (TrackSelector.AvailableTracks != null && TrackSelector.SelectedTrackIndex < TrackSelector.AvailableTracks.Length)
+        {
+            var track = TrackSelector.AvailableTracks[TrackSelector.SelectedTrackIndex];
+            rx = track.trackScaleX;
+            rz = track.trackScaleZ;
+        }
+
+        // If rz < 50 = highway mode (almost straight, very gentle curves)
+        if (rz < 50f)
+        {
+            // Long straight road with very gentle S-curves
+            float z = (angle / (Mathf.PI * 2)) * rx * 4f - rx * 2f; // -600 to +600
+            float x = Mathf.Sin(angle * 0.5f) * 5f; // Very gentle curve (5m max deviation)
+            return new Vector3(x, 0, z);
+        }
+        else
+        {
+            // Oval circuit
+            float x = Mathf.Cos(angle) * rx + Mathf.Sin(angle * 3) * 20f;
+            float z = Mathf.Sin(angle) * rz + Mathf.Cos(angle * 2) * 15f;
+            return new Vector3(x, 0, z);
+        }
     }
 
     static void SetupEnvironment()
