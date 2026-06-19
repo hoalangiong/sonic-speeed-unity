@@ -61,9 +61,22 @@ public class SetupRace : MonoBehaviour
             float x, z;
             if (rz < 50f)
             {
-                // Highway — straight
-                z = (angle / (Mathf.PI * 2)) * rx * 4f - rx * 2f;
-                x = Mathf.Sin(angle * 0.5f) * 5f;
+                // Highway — straight, go and come back (lap = round trip)
+                float halfWaypoints = numWaypoints / 2f;
+                if (i < numWaypoints / 2)
+                {
+                    // Going forward
+                    float t = (float)i / halfWaypoints;
+                    z = t * rx * 3f - rx * 1.5f;
+                    x = Mathf.Sin(t * Mathf.PI * 0.5f) * 3f;
+                }
+                else
+                {
+                    // Coming back (offset to other lane)
+                    float t = (float)(i - numWaypoints / 2) / halfWaypoints;
+                    z = rx * 1.5f - t * rx * 3f;
+                    x = -3f + Mathf.Sin(t * Mathf.PI * 0.5f) * 3f;
+                }
             }
             else
             {
