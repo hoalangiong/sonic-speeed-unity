@@ -1,33 +1,10 @@
 using UnityEngine;
 using UnityEditor;
+using System.Collections.Generic;
 
 /// <summary>
-/// Car data — stats for each selectable car.
-/// </summary>
-[System.Serializable]
-public class CarData
-{
-    public string name;
-    public string modelPath; // FBX path in Assets/
-    public float maxSpeed;
-    public float acceleration;
-    public float handling;
-    public Color color;
-
-    public CarData(string name, string modelPath, float maxSpeed, float acceleration, float handling, Color color)
-    {
-        this.name = name;
-        this.modelPath = modelPath;
-        this.maxSpeed = maxSpeed;
-        this.acceleration = acceleration;
-        this.handling = handling;
-        this.color = color;
-    }
-}
-
-/// <summary>
-/// Car selection screen — shown before race.
-/// Player chooses from available cars, then race starts.
+/// Car selector with 3D preview renders.
+/// Creates a camera that renders each car model to a texture for display.
 /// </summary>
 public class CarSelector : MonoBehaviour
 {
@@ -42,88 +19,123 @@ public class CarSelector : MonoBehaviour
 
     private bool raceStarted = false;
     private GameObject[] previewCars;
-    private bool previewsCreated = false;
+    private Camera previewCamera;
+    private RenderTexture[] carTextures;
+    private bool initialized = false;
 
     void Start()
     {
-        CreateCarPreviews();
+        SetupPreview();
     }
 
-    void CreateCarPreviews()
+    void SetupPreview()
     {
+        // Create preview camera (hidden, renders to texture)
+        var camObj = new GameObject("PreviewCamera");
+        camObj.transform.position = new Vector3(0, 2f, -6f);
+        camObj.transform.rotation = Quaternion.Euler(10, 0, 0);
+        previewCamera = camObj.AddComponent<Camera>();
+        previewCamera.clearFlags = CameraClearFlags.SolidColor;
+        previewCamera.backgroundColor = new Color(0.1f, 0.1f, 0.15f);
+        previewCamera.cullingMask = 1 << 8; // Layer 8 for preview
+        previewCamera.enabled = false; // Manual render
+
+        // Create render textures + car previews
+        carTextures = new RenderTexture[AvailableCars.Length];
         previewCars = new GameObject[AvailableCars.Length];
-        float spacing = 5f;
-        float startX = -(AvailableCars.Length - 1) * spacing / 2f;
 
         for (int i = 0; i < AvailableCars.Length; i++)
         {
-            var carData = AvailableCars[i];
-            var prefab = UnityEngine.Resources.Load<GameObject>(carData.modelPath);
+            carTextures[i] = new RenderTexture(256, 256, 16);
 
-            // Try loading via path
+            // Load car model
             #if UNITY_EDITOR
-            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(carData.modelPath);
-            #endif
-
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AvailableCars[i].modelPath);
             if (prefab != null)
             {
-                var preview = Instantiate(prefab);
-                preview.name = $"Preview_{carData.name}";
-                preview.transform.position = new Vector3(startX + i * spacing, 0.5f, 15f);
-                preview.transform.rotation = Quaternion.Euler(0, 160, 0);
-                preview.transform.localScale = Vector3.one * 1.5f;
+                var car = Instantiate(prefab);
+                car.name = $"CarPreview_{i}";
+                car.transform.position = new Vector3(i * 20f, -100f, 0); // Far below scene
+                car.transform.rotation = Quaternion.Euler(0, 135, 0);
+                car.transform.localScale = Vector3.one * 1.5f;
 
-                // Remove physics from preview
-                foreach (var col in preview.GetComponentsInChildren<Collider>())
-                    Destroy(col);
-                var rb = preview.GetComponent<Rigidbody>();
-                if (rb != null) Destroy(rb);
+                // Set layer 8 for all renderers
+                SetLayerRecursive(car, 8);
 
-                // Color it
-                foreach (var renderer in preview.GetComponentsInChildren<Renderer>())
+                // Apply car color
+                foreach (var renderer in car.GetComponentsInChildren<Renderer>())
                 {
                     foreach (var mat in renderer.materials)
                     {
-                        mat.color = carData.color;
+                        mat.color = AvailableCars[i].color;
                         mat.SetFloat("_Metallic", 0.85f);
                         mat.SetFloat("_Glossiness", 0.9f);
                     }
                 }
 
-                previewCars[i] = preview;
+                // Remove colliders
+                foreach (var col in car.GetComponentsInChildren<Collider>())
+                    Destroy(col);
+
+                previewCars[i] = car;
+
+                // Render to texture
+                RenderCarPreview(i);
             }
+            #endif
         }
-        previewsCreated = true;
+
+        // Add light for preview
+        var lightObj = new GameObject("PreviewLight");
+        var light = lightObj.AddComponent<Light>();
+        light.type = LightType.Directional;
+        light.intensity = 1.5f;
+        light.cullingMask = 1 << 8;
+        lightObj.transform.rotation = Quaternion.Euler(40, -30, 0);
+
+        initialized = true;
+    }
+
+    void RenderCarPreview(int index)
+    {
+        if (previewCamera == null || previewCars[index] == null) return;
+
+        previewCamera.targetTexture = carTextures[index];
+        previewCamera.transform.position = previewCars[index].transform.position + new Vector3(3f, 1.5f, -5f);
+        previewCamera.transform.LookAt(previewCars[index].transform.position + Vector3.up * 0.5f);
+        previewCamera.Render();
+        previewCamera.targetTexture = null;
     }
 
     void Update()
     {
-        if (!previewsCreated || raceStarted) return;
+        if (raceStarted || !initialized) return;
 
-        // Rotate selected car, dim others
-        for (int i = 0; i < previewCars.Length; i++)
+        // Rotate selected car preview
+        if (previewCars[SelectedCarIndex] != null)
         {
-            if (previewCars[i] == null) continue;
-
-            if (i == SelectedCarIndex)
-            {
-                previewCars[i].transform.Rotate(0, 30f * Time.deltaTime, 0);
-                previewCars[i].SetActive(true);
-            }
-            else
-            {
-                previewCars[i].SetActive(true);
-            }
+            previewCars[SelectedCarIndex].transform.Rotate(0, 40f * Time.deltaTime, 0);
+            RenderCarPreview(SelectedCarIndex);
         }
     }
 
-    void DestroyPreviews()
+    void SetLayerRecursive(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+            SetLayerRecursive(child.gameObject, layer);
+    }
+
+    void Cleanup()
     {
         if (previewCars != null)
-        {
             foreach (var car in previewCars)
                 if (car != null) Destroy(car);
-        }
+        if (previewCamera != null)
+            Destroy(previewCamera.gameObject);
+        // Find and destroy preview light
+        var light = GameObject.Find("PreviewLight");
+        if (light != null) Destroy(light);
     }
 
     void OnGUI()
@@ -134,119 +146,135 @@ public class CarSelector : MonoBehaviour
         float sh = Screen.height;
 
         // Dark background
-        GUI.color = new Color(0, 0, 0, 0.85f);
+        GUI.color = new Color(0.05f, 0.05f, 0.1f, 0.95f);
         GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
         GUI.color = Color.white;
 
         // Title
         GUIStyle titleStyle = new GUIStyle();
-        titleStyle.fontSize = 40;
+        titleStyle.fontSize = (int)(sh * 0.06f);
         titleStyle.fontStyle = FontStyle.Bold;
         titleStyle.alignment = TextAnchor.MiddleCenter;
         titleStyle.normal.textColor = Color.yellow;
-        GUI.Label(new Rect(0, sh * 0.05f, sw, 50), "SELECT YOUR CAR", titleStyle);
+        GUI.Label(new Rect(0, sh * 0.02f, sw, sh * 0.08f), "CHỌN XE", titleStyle);
 
-        // Car cards
-        float cardWidth = sw * 0.28f;
-        float cardHeight = sh * 0.6f;
-        float startX = (sw - cardWidth * 3 - 40) / 2;
-        float cardY = sh * 0.18f;
+        // Car cards with real 3D render
+        float cardWidth = sw * 0.3f;
+        float cardHeight = sh * 0.7f;
+        float startX = (sw - cardWidth * 3 - sw * 0.04f) / 2;
+        float cardY = sh * 0.12f;
 
         for (int i = 0; i < AvailableCars.Length; i++)
         {
             var car = AvailableCars[i];
-            float x = startX + i * (cardWidth + 20);
+            float x = startX + i * (cardWidth + sw * 0.02f);
+            bool selected = (i == SelectedCarIndex);
 
             // Card background
-            bool selected = (i == SelectedCarIndex);
-            GUI.color = selected ? new Color(0.2f, 0.4f, 0.8f, 0.9f) : new Color(0.15f, 0.15f, 0.2f, 0.9f);
+            GUI.color = selected ? new Color(0.15f, 0.3f, 0.6f, 0.95f) : new Color(0.1f, 0.1f, 0.15f, 0.9f);
             GUI.DrawTexture(new Rect(x, cardY, cardWidth, cardHeight), Texture2D.whiteTexture);
             GUI.color = Color.white;
 
-            // Border if selected
+            // 3D Car render preview
+            if (carTextures[i] != null)
+            {
+                GUI.DrawTexture(new Rect(x + 10, cardY + 10, cardWidth - 20, cardHeight * 0.5f), carTextures[i]);
+            }
+
+            // Selected border
             if (selected)
             {
                 GUI.color = Color.yellow;
-                GUI.DrawTexture(new Rect(x - 2, cardY - 2, cardWidth + 4, 4), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(x - 2, cardY + cardHeight - 2, cardWidth + 4, 4), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(x - 2, cardY, 4, cardHeight), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(x + cardWidth - 2, cardY, 4, cardHeight), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(x - 3, cardY - 3, cardWidth + 6, 3), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(x - 3, cardY + cardHeight, cardWidth + 6, 3), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(x - 3, cardY, 3, cardHeight + 3), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(x + cardWidth, cardY, 3, cardHeight + 3), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
 
             // Car name
             GUIStyle nameStyle = new GUIStyle();
-            nameStyle.fontSize = 18;
+            nameStyle.fontSize = (int)(sh * 0.03f);
             nameStyle.fontStyle = FontStyle.Bold;
             nameStyle.alignment = TextAnchor.MiddleCenter;
             nameStyle.normal.textColor = car.color;
-            GUI.Label(new Rect(x, cardY + 10, cardWidth, 30), car.name, nameStyle);
+            GUI.Label(new Rect(x, cardY + cardHeight * 0.52f, cardWidth, sh * 0.04f), car.name, nameStyle);
 
-            // Color preview box
-            GUI.color = car.color;
-            GUI.DrawTexture(new Rect(x + cardWidth * 0.2f, cardY + 50, cardWidth * 0.6f, 60), Texture2D.whiteTexture);
-            GUI.color = Color.white;
+            // Stats bars
+            float statY = cardY + cardHeight * 0.6f;
+            float barWidth = cardWidth * 0.6f;
+            float barX = x + (cardWidth - barWidth) / 2;
 
-            // Stats
-            GUIStyle statStyle = new GUIStyle();
-            statStyle.fontSize = 14;
-            statStyle.normal.textColor = Color.white;
-
-            float statY = cardY + 130;
-            GUI.Label(new Rect(x + 15, statY, cardWidth, 25), $"Speed:  {GetStars(car.maxSpeed, 250f)}", statStyle);
-            GUI.Label(new Rect(x + 15, statY + 25, cardWidth, 25), $"Accel:  {GetStars(car.acceleration, 50f)}", statStyle);
-            GUI.Label(new Rect(x + 15, statY + 50, cardWidth, 25), $"Handle: {GetStars(car.handling, 100f)}", statStyle);
+            DrawStatBar(barX, statY, barWidth, "Speed", car.maxSpeed / 250f, Color.red);
+            DrawStatBar(barX, statY + sh * 0.06f, barWidth, "Accel", car.acceleration / 50f, Color.green);
+            DrawStatBar(barX, statY + sh * 0.12f, barWidth, "Handle", car.handling / 100f, Color.cyan);
 
             // Select button
-            if (GUI.Button(new Rect(x + 10, cardY + cardHeight - 50, cardWidth - 20, 40), selected ? "✓ SELECTED" : "SELECT"))
+            GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+            btnStyle.fontSize = (int)(sh * 0.025f);
+            btnStyle.fontStyle = FontStyle.Bold;
+            if (GUI.Button(new Rect(x + cardWidth * 0.1f, cardY + cardHeight - sh * 0.06f, cardWidth * 0.8f, sh * 0.05f),
+                selected ? "✓ SELECTED" : "CHỌN", btnStyle))
             {
                 SelectedCarIndex = i;
             }
         }
 
-        // START RACE button
+        // START button
         GUIStyle startStyle = new GUIStyle(GUI.skin.button);
-        startStyle.fontSize = 28;
+        startStyle.fontSize = (int)(sh * 0.04f);
         startStyle.fontStyle = FontStyle.Bold;
-
-        if (GUI.Button(new Rect(sw / 2 - 120, sh * 0.88f, 240, 55), "START RACE"))
+        if (GUI.Button(new Rect(sw / 2 - sw * 0.12f, sh * 0.9f, sw * 0.24f, sh * 0.07f), "TIẾP TỤC →", startStyle))
         {
             raceStarted = true;
 
-            // Apply selected car stats to player vehicle
+            // Apply car stats + color
             var player = GameObject.Find("PlayerCar");
             if (player != null)
             {
                 var vc = player.GetComponent<VehicleController>();
                 if (vc != null)
                 {
-                    var car = AvailableCars[SelectedCarIndex];
-                    vc.maxSpeed = car.maxSpeed;
-                    vc.acceleration = car.acceleration;
-                    vc.turnSpeed = car.handling;
+                    var carData = AvailableCars[SelectedCarIndex];
+                    vc.maxSpeed = carData.maxSpeed;
+                    vc.acceleration = carData.acceleration;
+                    vc.turnSpeed = carData.handling;
                 }
 
-                // Apply color to player car
-                var car2 = AvailableCars[SelectedCarIndex];
+                var carColor = AvailableCars[SelectedCarIndex].color;
                 foreach (var renderer in player.GetComponentsInChildren<Renderer>())
                 {
                     foreach (var mat in renderer.materials)
                     {
-                        mat.color = car2.color;
+                        mat.color = carColor;
                         mat.SetFloat("_Metallic", 0.85f);
                         mat.SetFloat("_Glossiness", 0.9f);
                     }
                 }
             }
 
-            DestroyPreviews();
+            Cleanup();
             gameObject.SetActive(false);
         }
     }
 
-    string GetStars(float value, float max)
+    void DrawStatBar(float x, float y, float width, string label, float value, Color barColor)
     {
-        int stars = Mathf.RoundToInt((value / max) * 5);
-        return new string('★', stars) + new string('☆', 5 - stars);
+        float sh = Screen.height;
+        float barHeight = sh * 0.02f;
+
+        GUIStyle labelStyle = new GUIStyle();
+        labelStyle.fontSize = (int)(sh * 0.02f);
+        labelStyle.normal.textColor = Color.white;
+        GUI.Label(new Rect(x, y, width, sh * 0.025f), label, labelStyle);
+
+        // Background
+        GUI.color = new Color(0.2f, 0.2f, 0.2f);
+        GUI.DrawTexture(new Rect(x, y + sh * 0.025f, width, barHeight), Texture2D.whiteTexture);
+
+        // Fill
+        GUI.color = barColor;
+        GUI.DrawTexture(new Rect(x, y + sh * 0.025f, width * Mathf.Clamp01(value), barHeight), Texture2D.whiteTexture);
+        GUI.color = Color.white;
     }
 }
