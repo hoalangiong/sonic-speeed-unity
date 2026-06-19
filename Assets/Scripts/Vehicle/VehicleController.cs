@@ -180,24 +180,8 @@ public class VehicleController : MonoBehaviour
         move.y = verticalVelocity;
         cc.Move(move * Time.deltaTime);
 
-        // Safety: reset if fell off road or stuck below ground
-        // Also check if car is too far from any waypoint (off track)
-        bool offTrack = false;
-        var waypoints = GameObject.Find("Waypoints");
-        if (waypoints != null && IsGrounded)
-        {
-            float minDistToTrack = float.MaxValue;
-            foreach (Transform wp in waypoints.transform)
-            {
-                float d = Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z),
-                                           new Vector3(wp.position.x, 0, wp.position.z));
-                if (d < minDistToTrack) minDistToTrack = d;
-            }
-            // If more than 25m from nearest waypoint = off track
-            if (minDistToTrack > 25f) offTrack = true;
-        }
-
-        if (transform.position.y < -3f || offTrack)
+        // Safety: only reset if fell WAY below ground (not off-track check)
+        if (transform.position.y < -10f)
         {
             RespawnOnTrack();
         }
