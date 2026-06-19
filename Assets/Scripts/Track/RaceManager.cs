@@ -30,6 +30,10 @@ public class RaceManager : MonoBehaviour
     // Ramp boost
     public float RampBoostEndTime { get; private set; } = 0;
 
+    // Lap cooldown — prevent instant re-trigger
+    private float lastLapTime = -10f;
+    private float lapCooldown = 3f;
+
     private VehicleController playerVehicle;
 
     void Start()
@@ -61,13 +65,22 @@ public class RaceManager : MonoBehaviour
             PlayerCheckpoint++;
             if (PlayerCheckpoint >= checkpoints.Length)
             {
-                PlayerCheckpoint = 0;
-                PlayerLap++;
-                LapNotifyTime = Time.time;
-                LapNotifyNumber = PlayerLap;
-                if (PlayerLap > totalLaps)
+                // Only count lap if enough time passed since last lap
+                if (Time.time - lastLapTime > lapCooldown)
                 {
-                    RaceFinished = true;
+                    PlayerCheckpoint = 0;
+                    PlayerLap++;
+                    LapNotifyTime = Time.time;
+                    LapNotifyNumber = PlayerLap;
+                    lastLapTime = Time.time;
+                    if (PlayerLap > totalLaps)
+                    {
+                        RaceFinished = true;
+                    }
+                }
+                else
+                {
+                    PlayerCheckpoint = 0; // Reset but don't count lap
                 }
             }
         }
