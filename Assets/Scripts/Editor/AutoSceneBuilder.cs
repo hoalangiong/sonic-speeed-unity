@@ -325,14 +325,22 @@ public class AutoSceneBuilder : MonoBehaviour
 
     static void SetupEnvironment()
     {
-        // Trees around oval track
+        // Trees along track — placed FAR from road edge
         for (int i = 0; i < 30; i++)
         {
             float angle = (float)i / 30 * Mathf.PI * 2;
             Vector3 trackPos = GetTrackPosition(angle);
-            float offset = 20f + Random.Range(0f, 15f);
-            Vector3 outDir = trackPos.normalized;
-            Vector3 treePos = trackPos + outDir * offset;
+            float nextAngle = (float)(i + 1) / 30 * Mathf.PI * 2;
+            Vector3 nextPos = GetTrackPosition(nextAngle);
+
+            // Get perpendicular direction (away from road)
+            Vector3 dir = (nextPos - trackPos).normalized;
+            Vector3 perpendicular = new Vector3(-dir.z, 0, dir.x); // 90 degrees
+
+            // Place trees 30-50m away from road center (road is 20m wide, so 10m + 30m = safe)
+            float offset = 40f + Random.Range(0f, 20f);
+            int side = (i % 2 == 0) ? 1 : -1;
+            Vector3 treePos = trackPos + perpendicular * offset * side;
             treePos.y = 0;
 
             var tree = new GameObject("Tree");
