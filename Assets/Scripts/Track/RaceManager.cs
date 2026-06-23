@@ -9,7 +9,7 @@ public class RaceManager : MonoBehaviour
 {
     [Header("Race Settings")]
     public int totalLaps = 3;
-    public float checkpointRadius = 20f;
+    public float checkpointRadius = 12f; // Smaller = less accidental triggers
 
     [Header("References")]
     public Transform player;
@@ -32,7 +32,7 @@ public class RaceManager : MonoBehaviour
 
     // Lap cooldown — prevent instant re-trigger
     private float lastLapTime = -10f;
-    private float lapCooldown = 3f;
+    private float lapCooldown = 10f; // 10 seconds minimum between laps
 
     private VehicleController playerVehicle;
 

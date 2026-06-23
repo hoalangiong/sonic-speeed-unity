@@ -325,7 +325,14 @@ public class AutoSceneBuilder : MonoBehaviour
 
     static void SetupEnvironment()
     {
-        // Trees along track — placed FAR from road edge
+        // Get track type
+        float rz = 100f;
+        if (TrackSelector.AvailableTracks != null && TrackSelector.SelectedTrackIndex < TrackSelector.AvailableTracks.Length)
+            rz = TrackSelector.AvailableTracks[TrackSelector.SelectedTrackIndex].trackScaleZ;
+
+        bool isHighway = rz < 50f;
+
+        // Trees — place VERY far from road, only on sides
         for (int i = 0; i < 30; i++)
         {
             float angle = (float)i / 30 * Mathf.PI * 2;
@@ -333,15 +340,30 @@ public class AutoSceneBuilder : MonoBehaviour
             float nextAngle = (float)(i + 1) / 30 * Mathf.PI * 2;
             Vector3 nextPos = GetTrackPosition(nextAngle);
 
-            // Get perpendicular direction (away from road)
             Vector3 dir = (nextPos - trackPos).normalized;
-            Vector3 perpendicular = new Vector3(-dir.z, 0, dir.x); // 90 degrees
+            Vector3 perpendicular = new Vector3(-dir.z, 0, dir.x);
 
-            // Place trees 30-50m away from road center (road is 20m wide, so 10m + 30m = safe)
-            float offset = 40f + Random.Range(0f, 20f);
-            int side = (i % 2 == 0) ? 1 : -1;
-            Vector3 treePos = trackPos + perpendicular * offset * side;
-            treePos.y = 0;
+            // Highway: trees at fixed X offset (far from center road)
+            // Oval: trees outside the oval
+            float offset;
+            Vector3 treePos;
+
+            if (isHighway)
+            {
+                // Highway is along Z axis, road at X≈0, width=20m
+                // Place trees at X = ±30 to ±50 (far from road)
+                offset = 35f + Random.Range(0f, 20f);
+                int side = (i % 2 == 0) ? 1 : -1;
+                treePos = new Vector3(side * offset, 0, trackPos.z);
+            }
+            else
+            {
+                // Oval: place outside track
+                offset = 50f + Random.Range(0f, 25f);
+                int side = (i % 2 == 0) ? 1 : -1;
+                treePos = trackPos + perpendicular * offset * side;
+                treePos.y = 0;
+            }
 
             var tree = new GameObject("Tree");
             tree.transform.position = treePos;

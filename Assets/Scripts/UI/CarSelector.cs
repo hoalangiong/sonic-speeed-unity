@@ -43,10 +43,18 @@ public class CarSelector : MonoBehaviour
         // Remove old display car
         if (displayCar != null) Destroy(displayCar);
 
-        // Load model
+        // Load model — use Resources.Load for runtime (works on mobile)
+        // Models must be in Assets/Resources/Cars/ folder
+        string[] resourcePaths = { "Cars/lamborghini", "Cars/ferrari", "Cars/porsche" };
         GameObject prefab = null;
+
+        if (index < resourcePaths.Length)
+            prefab = Resources.Load<GameObject>(resourcePaths[index]);
+
+        // Fallback: try AssetDatabase in editor only
         #if UNITY_EDITOR
-        prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AvailableCars[index].modelPath);
+        if (prefab == null)
+            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(AvailableCars[index].modelPath);
         #endif
 
         if (prefab != null)
@@ -72,6 +80,19 @@ public class CarSelector : MonoBehaviour
             foreach (var col in displayCar.GetComponentsInChildren<Collider>()) Destroy(col);
             var rb = displayCar.GetComponent<Rigidbody>();
             if (rb != null) Destroy(rb);
+        }
+        else
+        {
+            // Last fallback: colored cube with car name
+            displayCar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            displayCar.name = "DisplayCar";
+            displayCar.transform.position = new Vector3(0, 0.5f, 0);
+            displayCar.transform.localScale = new Vector3(2f, 0.6f, 4.5f);
+            var mat = displayCar.GetComponent<Renderer>().material;
+            mat.color = AvailableCars[index].color;
+            mat.SetFloat("_Metallic", 0.85f);
+            mat.SetFloat("_Glossiness", 0.9f);
+            Destroy(displayCar.GetComponent<Collider>());
         }
     }
 
