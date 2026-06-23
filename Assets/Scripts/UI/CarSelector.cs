@@ -55,23 +55,23 @@ public class CarSelector : MonoBehaviour
             displayCar.name = "DisplayCar";
             displayCar.transform.position = new Vector3(0, 0.5f, 0);
             displayCar.transform.rotation = Quaternion.Euler(0, 135, 0);
-            displayCar.transform.localScale = Vector3.one * 1.2f;
 
-            // Remove physics
+            // Auto-scale to fit view
+            var renderers = displayCar.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                Bounds bounds = renderers[0].bounds;
+                for (int i2 = 1; i2 < renderers.Length; i2++)
+                    bounds.Encapsulate(renderers[i2].bounds);
+                float maxDim = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+                if (maxDim > 0)
+                    displayCar.transform.localScale = Vector3.one * (3.5f / maxDim);
+            }
+
+            // Remove physics only — KEEP original materials/textures
             foreach (var col in displayCar.GetComponentsInChildren<Collider>()) Destroy(col);
             var rb = displayCar.GetComponent<Rigidbody>();
             if (rb != null) Destroy(rb);
-
-            // Apply color
-            foreach (var renderer in displayCar.GetComponentsInChildren<Renderer>())
-            {
-                foreach (var mat in renderer.materials)
-                {
-                    mat.color = AvailableCars[index].color;
-                    mat.SetFloat("_Metallic", 0.85f);
-                    mat.SetFloat("_Glossiness", 0.9f);
-                }
-            }
         }
     }
 
