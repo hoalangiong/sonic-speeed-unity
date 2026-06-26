@@ -289,6 +289,12 @@ public class SetupRace : MonoBehaviour
         if (oldStar != null) DestroyImmediate(oldStar);
         var starObj = new GameObject("StarRating");
         starObj.AddComponent<StarRating>();
+
+        // Runtime tree spawner (places trees AFTER track is selected)
+        var oldTrees = GameObject.Find("TreeSpawner");
+        if (oldTrees != null) DestroyImmediate(oldTrees);
+        var treeObj = new GameObject("TreeSpawner");
+        treeObj.AddComponent<RuntimeTreeSpawner>();
     }
 #endif
 }

@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Race manager — handles laps, checkpoints, ranking, race state.
+/// Race manager — SIMPLE checkpoint + lap system.
+/// NEVER teleports the player. Only tracks progress.
+/// Checkpoints must be hit in order. Lap = all checkpoints cleared once.
 /// </summary>
 public class RaceManager : MonoBehaviour
 {
     [Header("Race Settings")]
     public int totalLaps = 3;
-    public float checkpointRadius = 12f; // Smaller = less accidental triggers
+    public float checkpointRadius = 15f;
 
     [Header("References")]
     public Transform player;
     public AIRacer[] aiRacers;
-    public Transform[] checkpoints; // Waypoints also act as checkpoints
+    public Transform[] checkpoints;
 
     // Race state
     public int PlayerLap { get; private set; } = 1;
@@ -30,9 +32,9 @@ public class RaceManager : MonoBehaviour
     // Ramp boost
     public float RampBoostEndTime { get; private set; } = 0;
 
-    // Lap cooldown — prevent instant re-trigger
-    private float lastLapTime = -10f;
-    private float lapCooldown = 10f; // 10 seconds minimum between laps
+    // Internal — track which checkpoints player has passed this lap
+    private bool[] checkpointsPassed;
+    private int totalCheckpointsPassed = 0;
 
     private VehicleController playerVehicle;
 
@@ -40,6 +42,9 @@ public class RaceManager : MonoBehaviour
     {
         if (player != null)
             playerVehicle = player.GetComponent<VehicleController>();
+
+        if (checkpoints != null)
+            checkpointsPassed = new bool[checkpoints.Length];
     }
 
     void Update()
@@ -57,49 +62,46 @@ public class RaceManager : MonoBehaviour
     {
         if (player == null || checkpoints == null || checkpoints.Length == 0) return;
 
-        Transform nextCP = checkpoints[PlayerCheckpoint];
-        float dist = Vector3.Distance(player.position, nextCP.position);
+        // Only check the NEXT expected checkpoint (must be sequential)
+        int nextCP = PlayerCheckpoint;
+        if (nextCP >= checkpoints.Length) return; // All passed this lap
+
+        Transform cpTransform = checkpoints[nextCP];
+        if (cpTransform == null) return;
+
+        float dist = Vector3.Distance(
+            new Vector3(player.position.x, 0, player.position.z),
+            new Vector3(cpTransform.position.x, 0, cpTransform.position.z)
+        );
 
         if (dist < checkpointRadius)
         {
+            // Mark this checkpoint as passed
+            checkpointsPassed[nextCP] = true;
             PlayerCheckpoint++;
+            totalCheckpointsPassed++;
+
+            // Check if all checkpoints passed = 1 lap complete
             if (PlayerCheckpoint >= checkpoints.Length)
             {
-                // Only count lap if enough time passed since last lap
-                if (Time.time - lastLapTime > lapCooldown)
-                {
-                    PlayerCheckpoint = 0;
-                    PlayerLap++;
-                    LapNotifyTime = Time.time;
-                    LapNotifyNumber = PlayerLap;
-                    lastLapTime = Time.time;
-                    if (PlayerLap > totalLaps)
-                    {
-                        RaceFinished = true;
-                    }
-                }
-                else
-                {
-                    PlayerCheckpoint = 0; // Reset but don't count lap
-                }
+                CompleteLap();
             }
         }
     }
 
-    void CheckRampBoost()
+    void CompleteLap()
     {
-        if (player == null || playerVehicle == null) return;
+        PlayerLap++;
+        LapNotifyTime = Time.time;
+        LapNotifyNumber = PlayerLap;
 
-        // Detect if player is on a ramp (not grounded + moving fast = just launched off ramp)
-        if (!playerVehicle.IsGrounded && playerVehicle.CurrentSpeed > 80f)
-        {
-            RampBoostEndTime = Time.time + 2f; // 2 second speed boost
-        }
+        // Reset for next lap
+        PlayerCheckpoint = 0;
+        checkpointsPassed = new bool[checkpoints.Length];
 
-        // Apply boost
-        if (Time.time < RampBoostEndTime)
+        if (PlayerLap > totalLaps)
         {
-            playerVehicle.inputNitro = true; // Reuse nitro multiplier for ramp boost
+            RaceFinished = true;
         }
     }
 
@@ -107,19 +109,34 @@ public class RaceManager : MonoBehaviour
     {
         if (aiRacers == null) return;
 
-        // Calculate progress: lap * checkpoints + currentCheckpoint
         int totalCPs = checkpoints != null ? checkpoints.Length : 1;
         float playerProgress = (PlayerLap - 1) * totalCPs + PlayerCheckpoint;
 
         int position = 1;
         foreach (var ai in aiRacers)
         {
+            if (ai == null) continue;
             float aiProgress = (ai.CurrentLap - 1) * totalCPs + ai.CurrentWaypoint;
             if (aiProgress > playerProgress)
                 position++;
         }
 
         PlayerPosition = position;
+    }
+
+    void CheckRampBoost()
+    {
+        if (player == null || playerVehicle == null) return;
+
+        if (!playerVehicle.IsGrounded && playerVehicle.CurrentSpeed > 80f)
+        {
+            RampBoostEndTime = Time.time + 2f;
+        }
+
+        if (Time.time < RampBoostEndTime)
+        {
+            playerVehicle.inputNitro = true;
+        }
     }
 
     public string GetPositionText()

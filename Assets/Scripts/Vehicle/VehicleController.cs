@@ -180,8 +180,9 @@ public class VehicleController : MonoBehaviour
         move.y = verticalVelocity;
         cc.Move(move * Time.deltaTime);
 
-        // Safety: only reset if fell WAY below ground (not off-track check)
-        if (transform.position.y < -10f)
+        // Safety: ONLY reset if fell extremely far (broken physics)
+        // NEVER auto-teleport during normal gameplay
+        if (transform.position.y < -50f)
         {
             RespawnOnTrack();
         }

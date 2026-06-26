@@ -30,7 +30,6 @@ public class AutoSceneBuilder : MonoBehaviour
         SetupRealisticLighting();
         var car = SetupCar();
         SetupRoad();
-        SetupEnvironment();
         SetupCamera(car);
 
         Debug.Log("✅ Scene built with realistic setup! Press Play to drive.");
@@ -323,95 +322,7 @@ public class AutoSceneBuilder : MonoBehaviour
         }
     }
 
-    static void SetupEnvironment()
-    {
-        // Get track type
-        float rz = 100f;
-        if (TrackSelector.AvailableTracks != null && TrackSelector.SelectedTrackIndex < TrackSelector.AvailableTracks.Length)
-            rz = TrackSelector.AvailableTracks[TrackSelector.SelectedTrackIndex].trackScaleZ;
-
-        bool isHighway = rz < 50f;
-
-        // Trees — place VERY far from road, only on sides
-        for (int i = 0; i < 30; i++)
-        {
-            float angle = (float)i / 30 * Mathf.PI * 2;
-            Vector3 trackPos = GetTrackPosition(angle);
-            float nextAngle = (float)(i + 1) / 30 * Mathf.PI * 2;
-            Vector3 nextPos = GetTrackPosition(nextAngle);
-
-            Vector3 dir = (nextPos - trackPos).normalized;
-            Vector3 perpendicular = new Vector3(-dir.z, 0, dir.x);
-
-            // Highway: trees at fixed X offset (far from center road)
-            // Oval: trees outside the oval
-            float offset;
-            Vector3 treePos;
-
-            if (isHighway)
-            {
-                // Highway is along Z axis, road at X≈0, width=20m
-                // Place trees at X = ±30 to ±50 (far from road)
-                offset = 35f + Random.Range(0f, 20f);
-                int side = (i % 2 == 0) ? 1 : -1;
-                treePos = new Vector3(side * offset, 0, trackPos.z);
-            }
-            else
-            {
-                // Oval: place outside track
-                offset = 50f + Random.Range(0f, 25f);
-                int side = (i % 2 == 0) ? 1 : -1;
-                treePos = trackPos + perpendicular * offset * side;
-                treePos.y = 0;
-            }
-
-            var tree = new GameObject("Tree");
-            tree.transform.position = treePos;
-            var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            trunk.transform.parent = tree.transform;
-            trunk.transform.localPosition = new Vector3(0, 3, 0);
-            trunk.transform.localScale = new Vector3(0.4f, 3f, 0.4f);
-            var trunkMat = new Material(Shader.Find("Standard"));
-            trunkMat.color = new Color(0.35f, 0.22f, 0.1f);
-            trunk.GetComponent<Renderer>().material = trunkMat;
-            DestroyImmediate(trunk.GetComponent<Collider>());
-
-            var canopy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            canopy.transform.parent = tree.transform;
-            canopy.transform.localPosition = new Vector3(0, 6.5f, 0);
-            canopy.transform.localScale = new Vector3(4f, 3.5f, 4f);
-            var canopyMat = new Material(Shader.Find("Standard"));
-            canopyMat.color = new Color(0.15f + Random.Range(0f, 0.1f), 0.4f + Random.Range(0f, 0.15f), 0.1f);
-            canopy.GetComponent<Renderer>().material = canopyMat;
-            DestroyImmediate(canopy.GetComponent<Collider>());
-        }
-
-        // === RAMPS on track ===
-        float[] rampAngles = { 0.8f, 2.2f, 3.8f, 5.2f }; // 4 ramps around track
-        foreach (float angle in rampAngles)
-        {
-            Vector3 pos = GetTrackPosition(angle);
-            Vector3 nextPos = GetTrackPosition(angle + 0.1f);
-            Vector3 dir = (nextPos - pos).normalized;
-
-            var ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ramp.name = "Ramp";
-            ramp.transform.position = pos + Vector3.up * 0.25f;
-            ramp.transform.localScale = new Vector3(8f, 0.5f, 6f);
-            ramp.transform.rotation = Quaternion.LookRotation(dir) * Quaternion.Euler(-8f, 0, 0); // Slight angle up
-
-            var rampMat = new Material(Shader.Find("Standard"));
-            rampMat.color = new Color(1f, 0.6f, 0f); // Orange ramp
-            rampMat.SetFloat("_Metallic", 0.3f);
-            ramp.GetComponent<Renderer>().material = rampMat;
-
-            // No-bounce
-            var physMat = new PhysicsMaterial();
-            physMat.bounciness = 0;
-            physMat.bounceCombine = PhysicsMaterialCombine.Minimum;
-            ramp.GetComponent<Collider>().material = physMat;
-        }
-    }
+    // SetupEnvironment removed — trees spawn at runtime via RuntimeTreeSpawner
 
     static void SetupCamera(GameObject car)
     {
